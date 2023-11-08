@@ -1,36 +1,92 @@
-- name: Manage Docker Containers on Local Machine
+- name: Deploy MongoDB and Spring Boot on Minikube
   hosts: localhost
+  gather_facts: no
   tasks:
-    - name: Create a Docker network
-      docker_network:
-        name: spring-mongo-network
-
-    - name: Pull MongoDB Docker image
-      docker_image:
-        name: mongo:latest
+    - name: Apply MongoDB Deployment
+      k8s:
         state: present
+        definition:
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: mongodb-deployment
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: mongodb
+            template:
+              metadata:
+                labels:
+                  app: mongodb
+              spec:
+                containers:
+                - name: mongodb-container
+                  image: mongo:latest
+                  ports:
+                  - containerPort: 27017
+      register: result_mongodb
+      until: result_mongodb.failed | bool
+      retries: 5
+      delay: 5
 
-    - name: Run MongoDB container
-      docker_container:
-        name: mongodb-container
-        image: mongo:latest
-        state: started
-        ports:
-          - "27017:27017"
-        networks:
-          - name: spring-mongo-network
-
-    - name: Pull Spring Boot Docker image
-      docker_image:
-        name: haythemkaouech/spring-mongo:latest
+    - name: Apply MongoDB Service
+      k8s:
         state: present
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: mongodb-service
+          spec:
+            selector:
+              app: mongodb
+            ports:
+            - protocol: TCP
+              port: 27017
+            type: ClusterIP
 
-    - name: Run Spring Boot container
-      docker_container:
-        name: spring-mongo-container
-        image: haythemkaouech/spring-mongo:latest
-        state: started
-        ports:
-          - "8900:8080"
-        networks:
-          - name: spring-mongo-network
+    - name: Apply Spring Boot Deployment
+      k8s:
+        state: present
+        definition:
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: spring-boot-deployment
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: spring-boot
+            template:
+              metadata:
+                labels:
+                  app: spring-boot
+              spec:
+                containers:
+                - name: spring-mongo-container
+                  image: haythemkaouech/spring-mongo:latest
+                  ports:
+                  - containerPort: 8080
+      register: result_spring
+      until: result_spring.failed | bool
+      retries: 5
+      delay: 5
+
+    - name: Apply Spring Boot Service
+      k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: spring-boot-service
+          spec:
+            selector:
+              app: spring-boot
+            ports:
+            - protocol: TCP
+              port: 8080
+              targetPort: 8080
+            type: NodePort
