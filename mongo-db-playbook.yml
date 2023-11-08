@@ -10,6 +10,7 @@
           kind: Deployment
           metadata:
             name: mongodb-deployment
+            namespace: default
           spec:
             replicas: 1
             selector:
@@ -25,10 +26,8 @@
                   image: mongo:latest
                   ports:
                   - containerPort: 27017
-      register: result_mongodb
-      until: result_mongodb.failed | bool
-      retries: 5
-      delay: 5
+  
+      
 
     - name: Apply MongoDB Service
       k8s:
@@ -38,6 +37,7 @@
           kind: Service
           metadata:
             name: mongodb-service
+            namespace: default
           spec:
             selector:
               app: mongodb
@@ -54,6 +54,7 @@
           kind: Deployment
           metadata:
             name: spring-boot-deployment
+            namespace: default
           spec:
             replicas: 1
             selector:
@@ -69,10 +70,8 @@
                   image: haythemkaouech/spring-mongo:latest
                   ports:
                   - containerPort: 8080
-      register: result_spring
-      until: result_spring.failed | bool
-      retries: 5
-      delay: 5
+   
+      
 
     - name: Apply Spring Boot Service
       k8s:
@@ -82,6 +81,7 @@
           kind: Service
           metadata:
             name: spring-boot-service
+            namespace: default
           spec:
             selector:
               app: spring-boot
