@@ -90,3 +90,42 @@
               port: 8080
               targetPort: 8080
             type: NodePort
+      # Nginx Dockerfile Deployment and Service
+    - name: Apply Nginx Dockerfile Deployment
+      community.kubernetes.k8s:
+        definition:
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: nginx-deployment
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: nginx
+            template:
+              metadata:
+                labels:
+                  app: nginx
+              spec:
+                containers:
+                - name: nginx-container
+                  image: your-docker-image-name:tag  # Replace with your Dockerfile image name and tag
+                  ports:
+                  - containerPort: 80
+
+    - name: Expose Nginx Dockerfile Deployment with a service
+      community.kubernetes.k8s:
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: nginx-service
+          spec:
+            selector:
+              app: nginx
+            ports:
+            - protocol: TCP
+              port: 80
+              targetPort: 80
+            type: NodePort       
